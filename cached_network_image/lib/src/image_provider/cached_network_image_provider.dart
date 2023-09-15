@@ -3,25 +3,21 @@ import 'dart:ui' as ui show Codec;
 
 import 'package:cached_network_image_platform_interface/cached_network_image_platform_interface.dart'
     show ImageRenderMethodForWeb;
+import 'package:cached_network_image_platform_interface/types.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
-
-import 'cached_network_image_provider.dart' as image_provider;
-import 'multi_image_stream_completer.dart';
 
 import 'package:cached_network_image_platform_interface/cached_network_image_platform_interface.dart'
     if (dart.library.io) '_image_loader.dart'
     if (dart.library.html) 'package:cached_network_image_web/cached_network_image_web.dart'
     show ImageLoader;
 
-/// Function which is called after loading the image failed.
-typedef ErrorListener = void Function();
-
 /// IO implementation of the CachedNetworkImageProvider; the ImageProvider to
 /// load network images using a cache.
 class CachedNetworkImageProvider
-    extends ImageProvider<image_provider.CachedNetworkImageProvider> {
+    extends ImageProvider<CachedNetworkImageProvider> {
   /// Creates an ImageProvider which loads an image from the [url], using the [scale].
   /// When the image fails to load [errorListener] is called.
   const CachedNetworkImageProvider(
@@ -49,7 +45,7 @@ class CachedNetworkImageProvider
   final double scale;
 
   /// Listener to be called when images fails to load.
-  final image_provider.ErrorListener? errorListener;
+  final ErrorListener? errorListener;
 
   /// Set headers for the image provider, for example for authentication
   final Map<String, String>? headers;
@@ -75,10 +71,10 @@ class CachedNetworkImageProvider
       'load is deprecated, use loadBuffer instead, see https://docs.flutter.dev/release/breaking-changes/image-provider-load-buffer')
   @override
   ImageStreamCompleter load(
-      image_provider.CachedNetworkImageProvider key, DecoderCallback decode) {
+      CachedNetworkImageProvider key, DecoderCallback decode) {
     final chunkEvents = StreamController<ImageChunkEvent>();
-    return MultiImageStreamCompleter(
-      codec: _loadAsync(key, chunkEvents, decode),
+    return MultiFrameImageStreamCompleter(
+      codec: _loadAsync(key, chunkEvents, decode).first,
       chunkEvents: chunkEvents.stream,
       scale: key.scale,
       informationCollector: () sync* {
@@ -94,7 +90,7 @@ class CachedNetworkImageProvider
   @Deprecated(
       '_loadAsync is deprecated, use loadBuffer instead, see https://docs.flutter.dev/release/breaking-changes/image-provider-load-buffer')
   Stream<ui.Codec> _loadAsync(
-    image_provider.CachedNetworkImageProvider key,
+    CachedNetworkImageProvider key,
     StreamController<ImageChunkEvent> chunkEvents,
     DecoderCallback decode,
   ) {
@@ -115,11 +111,11 @@ class CachedNetworkImageProvider
   }
 
   @override
-  ImageStreamCompleter loadBuffer(image_provider.CachedNetworkImageProvider key,
-      DecoderBufferCallback decode) {
+  ImageStreamCompleter loadBuffer(
+      CachedNetworkImageProvider key, DecoderBufferCallback decode) {
     final chunkEvents = StreamController<ImageChunkEvent>();
-    return MultiImageStreamCompleter(
-      codec: _loadBufferAsync(key, chunkEvents, decode),
+    return MultiFrameImageStreamCompleter(
+      codec: _loadBufferAsync(key, chunkEvents, decode).first,
       chunkEvents: chunkEvents.stream,
       scale: key.scale,
       informationCollector: () sync* {
@@ -133,7 +129,7 @@ class CachedNetworkImageProvider
   }
 
   Stream<ui.Codec> _loadBufferAsync(
-    image_provider.CachedNetworkImageProvider key,
+    CachedNetworkImageProvider key,
     StreamController<ImageChunkEvent> chunkEvents,
     DecoderBufferCallback decode,
   ) {
